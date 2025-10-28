@@ -1,6 +1,5 @@
 import os
 
-##raw_path = os.path.join('aida_raw', 'manica.xls')
 ## function to clean datas
 def cleandocs(raw_path, output_folder):
 
@@ -14,7 +13,7 @@ def cleandocs(raw_path, output_folder):
         df = pd.read_excel(raw_path, engine='xlrd', header=None)
 
         company_name = str(df.iloc[0, 1]).strip()
-        ## find piva location dynamically
+        ## find p.iva location dynamically
         piva = None
         for row_idx in range(df.shape[0]):
             for col_idx in range(df.shape[1]):
@@ -29,11 +28,11 @@ def cleandocs(raw_path, output_folder):
                     break
             if piva:
                 break
-        ## piva=str(df.iloc[2, 30]).strip()  old static position
+        
         print("Cleaning data for company:", company_name)
         print("P.IVA:", piva)
         safecn = re.sub(r'[\\/*?:"<>|]', "_", company_name)
-
+        
         # find header dynamically
         # Find the row containing "Bilancio non consolidato" in the first column
         target_row = None
@@ -51,11 +50,11 @@ def cleandocs(raw_path, output_folder):
                 if val and val.lower() != "nan":
                     header_values.append(val)            
         else:
-            print("⚠️ 'Bilancio non consolidato' not found in first column.")
+            print("'Bilancio non consolidato' not found in first column.")
 
 
 
-        # select relevant data
+        # Filter data
         target_index = df[df[0].astype(str).str.contains(" A. CREDITI VERSO SOCI", case=False)].index[0]
         end_index = df[df[0].astype(str).str.contains("  UTILE/PERDITA DI ESERCIZIO di pert. del GRUPPO", case=False)].index[0]
         df = df.iloc[target_index:end_index] # Keep everything from that row onward
@@ -74,7 +73,7 @@ def cleandocs(raw_path, output_folder):
         #remove empty spaces before text in fisrt column
         df[0] = df[0].astype(str).str.lstrip()
 
-        #Remove certain dataframe
+        #Remove specific empty dataframe
         df.reset_index(drop=True, inplace=True)
         start_idx = df[df[0].astype(str).str.contains("Garanzie prestate", case=False)].index[0]
         end_idx = df[df[0].astype(str).str.contains("A. TOT. VAL. DELLA PRODUZIONE", case=False)].index[0]
@@ -90,7 +89,7 @@ def cleandocs(raw_path, output_folder):
         df.replace(r'^\s*$', np.nan, regex=True, inplace=True)
         df.dropna(axis=1, how='all', inplace=True)
 
-        # Insert header row using extracted values
+        # Insert header row using previously extracted values
         new_head = ["Anno"] + header_values
         header_row = [""] * df.shape[1]
         for i, val in enumerate(new_head):
@@ -121,6 +120,7 @@ def cleandocs(raw_path, output_folder):
         print(f"Error processing {raw_path}: {e}")
         traceback.print_exc()
 
+# run cleandocs function for every files .xls in input folder and save in outputfolder
 input_folder = 'aida_raw'
 output_folder = 'aida_clean'
 os.makedirs(output_folder, exist_ok=True)
